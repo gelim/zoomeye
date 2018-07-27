@@ -5,8 +5,8 @@ import requests
 import argparse
 
 ######## CHANGE THESE  (Or use `--email` and `--password` arguments) #########
-USER_EMAIL = "email@example.com"
-USER_PASSWORD = "password"
+USER_EMAIL = "xxx"
+USER_PASSWORD = "xxx"
 ##############################################################################
 
 parser = argparse.ArgumentParser(
@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("search", help="Your ZoomEye Search")
 parser.add_argument(
-    "-p", "--pages", help="Number of pages to search (Default: 5)", type=int, default=5)
+    "-p", "--pages", help="Number of pages to search (Default: 1)", type=int, default=5)
 parser.add_argument("--email", help="Your ZoomEye email", default=USER_EMAIL)
 parser.add_argument(
     "--password", help="Your ZoomEye password", default=USER_PASSWORD)
@@ -23,6 +23,7 @@ parser.add_argument(
 parser.add_argument("-pl", "--platform",
                     help="Platforms to search, accepts \"host\" and \"web\" (Default: host)", default="host")
 parser.add_argument("--port", help="Include the port number in the results (e.g., 127.0.0.1:1337) (Only for host platform)", action="store_true")
+parser.add_argument("--short", help="Shows only the IP as results", action="store_true")
 parser.add_argument("--domain", help="Output the site address rather than the IP. (Only for web platform)", action="store_true")
 args = parser.parse_args()
 
@@ -66,7 +67,6 @@ def detectSaveMode():
 def getResult():
     # This is the prefixed Token
     TOKEN = "JWT " + getToken()
-
     # Add the prefixed token to the headers
     HEADERS = {"Authorization": TOKEN}
 
@@ -78,33 +78,32 @@ def getResult():
         SEARCH = requests.get(API_URL + '/' + SEARCH_TYPE + '/search',
                               headers=HEADERS, params={"query": QUERY, "page": currentPage})
         response = json.loads(SEARCH.text)
-        i = 0
-        try:
-            while i < len(response["matches"]):
-                if SEARCH_TYPE == "host":
-                    if args.port:
-                        resultItem = response["matches"][i]["ip"] + ":" + str(response["matches"][i]["portinfo"]["port"])
-                    else:
-                        resultItem = response["matches"][i]["ip"]
-                    if args.save:
-                        resultsFile.write(resultItem + "\n")
-                    print(resultItem)
+        if not response: quit() # no more results?
 
-                if SEARCH_TYPE == "web":
-                    if args.domain:
-                        resultItem = response["matches"][i]["site"] 
-                    else:
-                        resultItem = response["matches"][i]["ip"][0]
-                    if args.save:
-                        resultsFile.write(resultItem + "\n")
-                    print(resultItem)
-                i += 1
-        except IndexError:
-            break
-        except KeyError:
-            print("[ERROR] No hosts found")
+        for m in response["matches"]:
+            if SEARCH_TYPE == "host":
+                if args.port:
+                    resultItem = m["ip"] + ":" + str(m["portinfo"]["port"])
+                else:
+                    resultItem = m["ip"]
+                if not args.short:
+                    resultItem += "\tAS:%s (%s)\tLoc:%s /%s" % (m['geoinfo']['asn'], m['geoinfo']['aso'],
+                                                            m['geoinfo']['country']['code'],
+                                                            m['geoinfo']['country']['names']['en'])
+
+                if args.save:
+                    resultsFile.write(resultItem + "\n")
+                print(resultItem)
+
+            if SEARCH_TYPE == "web":
+                if args.domain:
+                    resultItem = m["site"]
+                else:
+                    resultItem = m["ip"][0]
+                if args.save:
+                    resultsFile.write(resultItem + "\n")
+                print(resultItem)
             ipCount()
-            quit()
         currentPage += 1
 
 
