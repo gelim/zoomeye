@@ -83,9 +83,14 @@ def zoom_print_facets(result):
             count = str(e['count'])
             name = e['name']
             if isinstance(name, int): name = str(name)
-            print count.ljust(8) + cyan(name).ljust(20)
+            print count.ljust(9) + cyan(name).ljust(20)
         print
     return
+
+def shorten(s, l):
+    if len(s) >= l:
+        s = s[:l-5] + "[...]"
+    return s
 
 def print_results(search):
     for s in search:
@@ -93,7 +98,7 @@ def print_results(search):
             pprint(s)
         else:
             banner = s['portinfo'].get('banner', 'N/A')
-            location = ""
+            location = "N/A"
             http_status=""
             if banner and re.match('^HTTP.*', banner):
                 match=re.match('''^HTTP/1.\d (.*?)\r\n''', banner)
@@ -109,18 +114,21 @@ def print_results(search):
                 city_name = geoinfo['city']['names'].get('en', 'N/A')
                 country_code = geoinfo['country'].get('code', '??')
                 asn = str(geoinfo['asn'])
+            dns = s.get('rdns', 'N/A')
             port = str(s['portinfo']['port'])
-            app = s['portinfo']['app']
-            version = s['portinfo']['version']
+            app = shorten(s['portinfo']['app'], 30)
+            version = shorten(s['portinfo']['version'], 12)
+            city_name = shorten(city_name, 14)
+            http_status = shorten(http_status, 20)
             if not country_code: country_code = '??'
-            print s['ip'].ljust(20) + port.ljust(6) + \
-                app.ljust(40) + \
-                version.ljust(20) + \
+            print s['ip'].ljust(16) + port.ljust(6) + \
+                app.ljust(31) + \
+                version.ljust(12) + \
                 asn.ljust(7) + \
                 country_code.ljust(3) + "/ " + \
-                city_name.ljust(18) + \
-                ('%s [...]' % http_status[:12]).ljust(20) + \
-                location
+                city_name.ljust(14) + \
+                http_status.ljust(20) + \
+                location + " " + dns
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO) # logging.DEBUG
