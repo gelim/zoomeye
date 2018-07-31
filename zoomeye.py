@@ -93,12 +93,13 @@ def print_results(search):
     else: print '\n'.join([s['ip'] for s in search])
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO) # logging.DEBUG
     parser = argparse.ArgumentParser(description='Simple ZoomEye CLI')
-    parser.add_argument("search", help="Your ZoomEye Search")
+    parser.add_argument("search", nargs='?', help="Your ZoomEye Search")
     parser.add_argument("--user", help="ZoomEye API user", default=None)
     parser.add_argument("--password", help="ZoomEye API password", default=None)
     parser.add_argument("-l", "--limit", help="Limit number of results printed (default: 20)", type=int, default=20)
-    parser.add_argument("-f", "--facets", help="Facets to show (country,os,app,service,port,device)", default=None)
+    parser.add_argument("-f", "--facets", help="Facets to show (country,city,os,app,service,port,device)", default=None)
     parser.add_argument("-i", "--info", help="Show account info", action="store_true")
     parser.add_argument("--port", help="Show port with IP (default: False)", action="store_true")
     parser.add_argument("--short", help="Shows only the IP as results", action="store_true")
@@ -107,7 +108,9 @@ if __name__ == '__main__':
     if args.facets == 'list':
         print ','.join(zoom_facets)
         exit(0)
-    logging.basicConfig(level=logging.INFO) # logging.DEBUG
+    if not args.info and not args.search:
+        print "You need to indicate a search query like 'app:SAP +country:RU'"
+        exit(0)
 
     creds = zoom_get_config(args)
     token = zoom_get_token(creds)
