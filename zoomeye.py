@@ -11,6 +11,7 @@ import urllib3
 import logging
 import pickle
 import json
+import re
 import os
 
 urllib3.disable_warnings()
@@ -72,6 +73,7 @@ def zoom_info(token):
     
 def zoom_print_facets(result):
     facets_k = result.keys()
+    if not facets_k: return
     count = str(result['device'][0]['count'])
     facets_k.remove("device")
     print "Total: %s" % red(count, bold=True)
@@ -85,12 +87,40 @@ def zoom_print_facets(result):
         print
     return
 
-#
-# TODO: here we could diplay more info as additional columns for each IP
-#
 def print_results(search):
-    if args.port: print '\n'.join(["%s:%s" % (s['ip'], s['portinfo']['port']) for s in search])
-    else: print '\n'.join([s['ip'] for s in search])
+    for s in search:
+        if args.debug:
+            pprint(s)
+        else:
+            banner = s['portinfo'].get('banner', 'N/A')
+            location = ""
+            http_status=""
+            if banner and re.match('^HTTP.*', banner):
+                match=re.match('''^HTTP/1.\d (.*?)\r\n''', banner)
+                if match: http_status = match.groups()[0].encode('ascii', 'ignore')
+                match=re.match('''.*Location: (.*?)\r\n''', banner, re.DOTALL|re.IGNORECASE)
+                if match: location =  match.groups()[0].encode('ascii', 'ignore')
+            geoinfo = s['geoinfo']
+            if not geoinfo:
+                city_name = "N/A"
+                country_code = "??"
+                asn = "N/A"
+            else:
+                city_name = geoinfo['city']['names'].get('en', 'N/A')
+                country_code = geoinfo['country'].get('code', '??')
+                asn = str(geoinfo['asn'])
+            port = str(s['portinfo']['port'])
+            app = s['portinfo']['app']
+            version = s['portinfo']['version']
+            if not country_code: country_code = '??'
+            print s['ip'].ljust(20) + port.ljust(6) + \
+                app.ljust(40) + \
+                version.ljust(20) + \
+                asn.ljust(7) + \
+                country_code.ljust(3) + "/ " + \
+                city_name.ljust(18) + \
+                ('%s [...]' % http_status[:12]).ljust(20) + \
+                location
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO) # logging.DEBUG
@@ -98,11 +128,10 @@ if __name__ == '__main__':
     parser.add_argument("search", nargs='?', help="Your ZoomEye Search")
     parser.add_argument("--user", help="ZoomEye API user", default=None)
     parser.add_argument("--password", help="ZoomEye API password", default=None)
-    parser.add_argument("-l", "--limit", help="Limit number of results printed (default: 20)", type=int, default=20)
+    parser.add_argument("-l", "--limit", help="Limit number of results printed (default: 20)", type=int, default=19)
     parser.add_argument("-f", "--facets", help="Facets to show (country,city,os,app,service,port,device)", default=None)
     parser.add_argument("-i", "--info", help="Show account info", action="store_true")
-    parser.add_argument("--port", help="Show port with IP (default: False)", action="store_true")
-    parser.add_argument("--short", help="Shows only the IP as results", action="store_true")
+    parser.add_argument("-d", "--debug", help="Dump JSON detailed info for each result", action="store_true")
     parser.add_argument("--count", help="Only display number of results (default: False)", action="store_true")
     args = parser.parse_args()
     if args.facets == 'list':
@@ -135,7 +164,7 @@ if __name__ == '__main__':
     print_results(matches)
 
     # we asked for more pages?
-    pages_asked = int(args.limit / 20) + 1
+    pages_asked = args.limit / 20 + 1
 
     while current_page <= pages_asked:
         res = zoom_search(token, args.search, current_page, facets)
@@ -144,7 +173,7 @@ if __name__ == '__main__':
             zoom_print_facets(search)
             exit(0)
         reminder = (args.limit - (current_page-1)*20)
-        if 0 < reminder < 20: print_results(matches[:reminder])
+        if 0 <= reminder < 20: print_results(matches[:reminder])
         else: print_results(matches)
         current_page += 1
         
