@@ -98,7 +98,7 @@ if __name__ == '__main__':
     parser.add_argument("--user", help="ZoomEye API user", default=None)
     parser.add_argument("--password", help="ZoomEye API password", default=None)
     parser.add_argument("-l", "--limit", help="Limit number of results printed (default: 20)", type=int, default=20)
-    parser.add_argument("-f", "--facets", help="Facets to show (country,os,product,service,port,device)", default=None)
+    parser.add_argument("-f", "--facets", help="Facets to show (country,os,app,service,port,device)", default=None)
     parser.add_argument("-i", "--info", help="Show account info", action="store_true")
     parser.add_argument("--port", help="Show port with IP (default: False)", action="store_true")
     parser.add_argument("--short", help="Shows only the IP as results", action="store_true")
@@ -126,7 +126,7 @@ if __name__ == '__main__':
         zoom_print_facets(search)
         exit(0)
     else: print "Number of results: %s" % search["total"]
-    if args.count: exit(0)
+    if args.count or search["total"] == 0: exit(0)
     if args.limit < 20: matches = search["matches"][:args.limit]
     else: matches = search["matches"]
     print_results(matches)
