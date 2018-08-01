@@ -11,6 +11,7 @@ import urllib3
 import logging
 import pickle
 import json
+import sys
 import re
 import os
 
@@ -99,12 +100,15 @@ def print_results(search):
         else:
             banner = s['portinfo'].get('banner', 'N/A')
             location = "N/A"
-            http_status=""
+            title="N/A"
+            http_status="N/A"
             if banner and re.match('^HTTP.*', banner):
                 match=re.match('''^HTTP/1.\d (.*?)\r\n''', banner)
                 if match: http_status = match.groups()[0].encode('ascii', 'ignore')
                 match=re.match('''.*Location: (.*?)\r\n''', banner, re.DOTALL|re.IGNORECASE)
                 if match: location =  match.groups()[0].encode('ascii', 'ignore')
+                match=re.match('''.*<title>(.*?)</title>''', banner, re.DOTALL|re.IGNORECASE)
+                if match: title =  match.groups()[0].encode('ascii', 'ignore')
             geoinfo = s['geoinfo']
             if not geoinfo:
                 city_name = "N/A"
@@ -114,21 +118,22 @@ def print_results(search):
                 city_name = geoinfo['city']['names'].get('en', 'N/A')
                 country_code = geoinfo['country'].get('code', '??')
                 asn = str(geoinfo['asn'])
-            dns = s.get('rdns', 'N/A')
+            dns = s.get('rdns', 'N/A').encode('ascii', 'ignore')
             port = str(s['portinfo']['port'])
-            app = shorten(s['portinfo']['app'], 30)
+            app = shorten(s['portinfo']['app'], 25)
             version = shorten(s['portinfo']['version'], 12)
-            city_name = shorten(city_name, 14)
+            city_name = shorten(city_name, 10).encode('ascii', 'ignore')
             http_status = shorten(http_status, 20)
             if not country_code: country_code = '??'
             print s['ip'].ljust(16) + port.ljust(6) + \
-                app.ljust(31) + \
-                version.ljust(12) + \
+                app.ljust(25) + \
+                version.ljust(13) + \
                 asn.ljust(7) + \
                 country_code.ljust(3) + "/ " + \
-                city_name.ljust(14) + \
-                http_status.ljust(20) + \
-                location + " " + dns
+                city_name.ljust(11) + \
+                http_status.ljust(21) + \
+                shorten(title, 30).ljust(30) + \
+                "->" + location.ljust(40) + " " + dns
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO) # logging.DEBUG
@@ -165,7 +170,7 @@ if __name__ == '__main__':
     if facets:
         zoom_print_facets(search)
         exit(0)
-    else: print "Number of results: %s" % search["total"]
+    else: sys.stderr.write("Number of results: %s\n" % search["total"])
     if args.count or search["total"] == 0: exit(0)
     if args.limit < 20: matches = search["matches"][:args.limit]
     else: matches = search["matches"]
