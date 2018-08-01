@@ -27,6 +27,7 @@ creds = {}
 zoom_facets= ['country', 'os', 'product', 'service', 'port', 'device']
 
 def zoom_get_config(args):
+    global creds
     conf_file = "%s/.zoomeye.p" % os.environ.get('HOME')
     api = dict()
     # command-line API key get precedence over other methods
@@ -71,7 +72,7 @@ def zoom_info(token):
     headers["Authorization"] = "JWT %s" % token
     res = requests.get(api["info"], headers=headers)
     return json.loads(res.text)
-    
+
 def zoom_print_facets(result):
     facets_k = result.keys()
     if not facets_k: return
@@ -162,7 +163,7 @@ if __name__ == '__main__':
         exit(0)
     if args.facets: facets=args.facets + ",device"
     else: facets=args.facets
-    
+
     current_page = 1
 
     search = zoom_search(token, args.search, current_page, facets)
@@ -189,4 +190,4 @@ if __name__ == '__main__':
         if 0 <= reminder < 20: print_results(matches[:reminder])
         else: print_results(matches)
         current_page += 1
-        
+
