@@ -22,14 +22,13 @@ api={"login": "https://api.zoomeye.org/user/login",
      "search": "https://api.zoomeye.org/host/search",
      "info": "https://api.zoomeye.org/resources-info",
 }
-creds = {}
 
 zoom_facets= ['country', 'os', 'product', 'service', 'port', 'device']
 
 def zoom_get_config(args):
-    global creds
     conf_file = "%s/.zoomeye.p" % os.environ.get('HOME')
     api = dict()
+    creds = dict()
     # command-line API key get precedence over other methods
     if args.user and args.password:
         creds['user'] = args.user
@@ -47,6 +46,9 @@ def zoom_get_config(args):
             logging.error("Pickle file structure mismatch.")
             exit(-2)
         return creds
+    else:
+        logging.error("You don't have saved API creds, and didn't give them on command-line.")
+        exit(-3)
 
 def zoom_get_token(creds):
     data = {"username": creds['user'], "password": creds['password']}
@@ -133,7 +135,7 @@ def print_results(search):
                 country_code.ljust(3) + "/ " + \
                 city_name.ljust(11) + \
                 http_status.ljust(21) + \
-                shorten(title, 30).ljust(30) + \
+                shorten(title, 29).ljust(30) + \
                 "->" + location.ljust(40) + " " + dns
 
 if __name__ == '__main__':
