@@ -173,7 +173,7 @@ if __name__ == '__main__':
     if facets:
         zoom_print_facets(search)
         exit(0)
-    else: sys.stderr.write("Number of results: %s\n" % search["total"])
+    else: sys.stderr.write("Number of results: %s\n" % search["available"]) # was 'total' but does not reflect the number of results retured
     if args.count or search["total"] == 0: exit(0)
     if args.limit < 20: matches = search["matches"][:args.limit]
     else: matches = search["matches"]
